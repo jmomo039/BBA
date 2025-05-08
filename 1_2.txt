@@ -1,0 +1,63 @@
+//RemoteInterface
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface RemoteInterface extends Remote {
+    String reverseString(String input) throws RemoteException;
+}
+//ServerImplementation
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+
+public class ServerImplementation extends UnicastRemoteObject implements RemoteInterface {
+
+    protected ServerImplementation() throws RemoteException {
+        super();
+    }
+
+    @Override
+    public synchronized String reverseString(String input) throws RemoteException {
+        StringBuilder reversed = new StringBuilder(input).reverse();
+        System.out.println("Received string: " + input + ", Reversed: " + reversed);
+        return "Reversed string is: " + reversed.toString();
+    }
+}
+//Server.java
+import java.rmi.Naming;
+import java.rmi.registry.LocateRegistry;
+
+public class Server {
+    public static void main(String[] args) {
+        try {
+            LocateRegistry.createRegistry(1099); // Start RMI registry
+            ServerImplementation server = new ServerImplementation();
+            Naming.rebind("RemoteService", server);
+            System.out.println("Server is running...");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+//Client.java
+import java.rmi.Naming;
+import java.util.Scanner;
+
+public class Client {
+    public static void main(String[] args) {
+        try {
+            RemoteInterface stub = (RemoteInterface) Naming.lookup("rmi://localhost/RemoteService");
+
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Enter a string to reverse: ");
+            String input = scanner.nextLine();
+
+            String response = stub.reverseString(input);
+            System.out.println("Server response: " + response);
+            scanner.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+

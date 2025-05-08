@@ -1,0 +1,98 @@
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
+
+class DistributedRingElection {
+    private int numProcesses;
+    private int coordinator = -1; // No coordinator initially
+    private boolean[] activeProcesses;
+
+    public DistributedRingElection(int numProcesses) {
+        this.numProcesses = numProcesses;
+        this.activeProcesses = new boolean[numProcesses];
+
+        // Initially, all processes are active
+        for (int i = 0; i < numProcesses; i++) {
+            activeProcesses[i] = true;
+        }
+
+        }
+
+    public void simulateCrash(int processId) {
+        if (processId >= 0 && processId < numProcesses) {
+            activeProcesses[processId] = false;
+            System.out.println("Process " + processId + " has crashed!");
+        } else {
+            System.out.println("Invalid process ID for crash simulation.");
+        }
+    }
+
+    public void startElection(int initiator) {
+        if (initiator < 0 || initiator >= numProcesses) {
+            System.out.println("Invalid process ID.");
+            return;
+        }
+
+        if (!activeProcesses[initiator]) {
+            System.out.println("Election cannot be initiated by a crashed process (Process " + initiator + ").");
+            return;
+        }
+
+        System.out.println("\nProcess " + initiator + " is initiating an election...");
+
+        List<Integer> electionPath = new ArrayList<>();
+        electionPath.add(initiator);
+        int maxId = initiator;
+
+        int current = (initiator + 1) % numProcesses;
+
+        while (current != initiator) {
+            if (activeProcesses[current]) {
+                System.out.println("Process " + maxId + " -> Process " + current + " (ELECTION)");
+                electionPath.add(current);
+                if (current > maxId) {
+                    maxId = current;
+                }
+            } else {
+                System.out.println("Process " + current + " is skipped (CRASHED).");
+            }
+            current = (current + 1) % numProcesses;
+        }
+
+        coordinator = maxId;
+        System.out.println("\nProcess " + coordinator + " wins the election and becomes the new coordinator.");
+        announceNewCoordinator();
+    }
+
+    private void announceNewCoordinator() {
+        System.out.println("Announcing new coordinator...");
+        int current = (coordinator + 1) % numProcesses;
+
+        while (current != coordinator) {
+            if (activeProcesses[current]) {
+                System.out.println("Process " + coordinator + " -> Process " + current + " (ELECTED)");
+            }
+            current = (current + 1) % numProcesses;
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Enter the number of processes: ");
+        int numProcesses = scanner.nextInt();
+
+        DistributedRingElection election = new DistributedRingElection(numProcesses);
+
+        System.out.print("Enter the process ID to simulate a crash (-1 if none): ");
+        int crashProcess = scanner.nextInt();
+        if (crashProcess != -1) {
+            election.simulateCrash(crashProcess);
+        }
+
+        System.out.print("Enter the process to start the election: ");
+        int initiator = scanner.nextInt();
+
+        election.startElection(initiator);
+    }
+}

@@ -1,0 +1,172 @@
+// calc_client1.java    
+    
+import calc_val.*;
+import org.omg.CosNaming.*;
+import org.omg.CosNaming.NamingContextPackage.*;
+import org.omg.CORBA.*;
+import java.io.*;
+public class calc_client1
+{
+    static calc calcimpl;
+    public static void main(String args[])
+    {
+      try
+      {
+        double result=0.0,num1=0.0,num2=0.0;
+
+        ORB orb=ORB.init(args,null);
+        org.omg.CORBA.Object objref=orb.resolve_initial_references("NameService");
+
+        NamingContextExt ncref=NamingContextExtHelper.narrow(objref);
+
+        String pathname="calc";
+        calcimpl=calcHelper.narrow(ncref.resolve_str(pathname));
+
+
+       int ch=1;
+
+       while(ch!=0)
+       {
+        System.out.println("1. Addition");
+        System.out.println("2. Subtraction");
+        System.out.println("0. Exit");
+
+        BufferedReader in1=new BufferedReader(new InputStreamReader(System.in));
+
+        System.out.println("enter your choice:");
+        ch=Integer.parseInt(in1.readLine());
+        
+        if(ch==0)
+          break;
+
+        BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
+
+        System.out.println("enter number1:");
+        num1=Double.parseDouble(in.readLine());
+
+        System.out.println("enter number2:");
+        num2=Double.parseDouble(in.readLine());
+
+        switch(ch)
+        {
+          case 1:
+              result=calcimpl.addfn(num1,num2);
+              break;
+
+          case 2:
+              result=calcimpl.subfn(num1,num2);
+              break;
+
+      
+        }
+              System.out.println("result is:"+result);
+
+        }
+
+      }
+      catch(Exception e)
+      {
+         System.out.println(e);
+      }
+    }
+
+}
+//serverimpl
+import calc_val.*;
+import org.omg.CosNaming.*;
+import org.omg.CosNaming.NamingContextPackage.*;
+import org.omg.CORBA.*;
+import org.omg.PortableServer.*;
+import org.omg.PortableServer.POA;
+
+class serverimpl extends calcPOA
+{
+   private ORB orb;
+   public void setorb(ORB orb_val)
+   {
+      orb=orb_val;
+   }
+
+   public double addfn(double n1,double n2)
+   {
+     return(n1+n2);
+   }
+   public double subfn(double n1,double n2)
+   {
+     return(n1-n2);
+   }
+   public double mulfn(double n1,double n2)
+   {
+     return(n1*n2);
+   }
+   public double divfn(double n1,double n2)
+   {
+     return(n1/n2);
+   }
+
+
+}
+public class calc_server
+{
+   public static void main(String args[])
+   {
+     try
+     {
+         ORB orb=ORB.init(args,null);
+
+         org.omg.CORBA.Object objref1=orb.resolve_initial_references("RootPOA");
+         POA rootpoa=POAHelper.narrow(objref1);
+         rootpoa.the_POAManager().activate();
+
+
+         serverimpl serverobj=new serverimpl();
+         serverobj.setorb(orb);
+         org.omg.CORBA.Object objref2=rootpoa.servant_to_reference(serverobj);
+         calc href=calcHelper.narrow(objref2);
+
+
+         org.omg.CORBA.Object objref3= orb.resolve_initial_references("NameService");
+         NamingContextExt ncref=NamingContextExtHelper.narrow(objref3);
+         String pathname="calc";
+         NameComponent path[]=ncref.to_name(pathname);
+         ncref.rebind(path,href);
+
+
+         System.out.println("server ready and waiting...");
+
+         orb.run();
+
+
+     }
+     catch(Exception e)
+     {
+       System.out.println(e);
+     }
+   }
+
+
+}
+
+// calc.idl
+
+module calc_val
+{
+  interface calc
+  {
+    double addfn(in double a,in double b);
+    double subfn(in double a,in double b);
+ 
+  };
+};
+//command idlj -fall calc.idl
+
+//javac *.java  calc_val/*.java
+
+//orbd -ORBInitialPort 1050&
+
+//java calc_server -ORBInitialPort 1050 -ORBInitialHost localhost
+
+//java calc_client1 -ORBInitialPort 1050 -ORBInitialHost localhost
+
+
+

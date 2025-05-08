@@ -1,0 +1,94 @@
+import java.util.Scanner;
+
+public class SimpleBullyElections{
+
+    private int numProcesses;
+    private int coordinator;
+    private boolean[] activeProcesses;
+
+    public SimpleBullyElection(int numProcesses) {
+        this.numProcesses = numProcesses;
+        this.activeProcesses = new boolean[numProcesses];
+
+        // Initially, all processes are active
+        for (int i = 0; i < numProcesses; i++) {
+            activeProcesses[i] = true;
+        }
+    }
+
+    public void startElection(int initiator) {
+        if (!activeProcesses[initiator]) {
+            System.out.println("\nElection cannot be initiated. Process " + initiator + " is down.");
+            return;
+        }
+
+        System.out.println("\nProcess " + initiator + " starts an election.");
+        boolean higherProcessAlive = false;
+
+        for (int i = initiator + 1; i < numProcesses; i++) {
+            System.out.println("Process " + initiator + " sends ELECTION message to Process " + i);
+
+            if (activeProcesses[i]) {
+                higherProcessAlive = true;
+            }
+        }
+
+        for (int i = initiator + 1; i < numProcesses; i++) {
+            if (!activeProcesses[i]) {
+                System.out.println("Process " + i + " is down and does not respond.");
+            } else {
+                System.out.println("Process " + i + " replies OK to Process " + initiator);
+            }
+        }
+
+        if (higherProcessAlive) {
+            for (int i = initiator + 1; i < numProcesses; i++) {
+                if (activeProcesses[i]) {
+                    System.out.println("\nProcess " + i + " takes over the election.");
+                    startElection(i);
+                    return;
+                }
+            }
+        } else {
+            coordinator = initiator;
+            System.out.println("\nProcess " + coordinator + " becomes the new coordinator.");
+            announceCoordinator();
+        }
+    }
+
+    private void announceCoordinator() {
+        for (int i = 0; i < numProcesses; i++) {
+            if (i != coordinator && activeProcesses[i]) {
+                System.out.println("Coordinator " + coordinator + " sends COORDINATOR message to Process " + i);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Enter the number of processes: ");
+        int numProcesses = scanner.nextInt();
+
+        SimpleBullyElection bully = new SimpleBullyElection(numProcesses);
+
+        System.out.print("\nEnter the crashed process number (-1 if none): ");
+        int crashedProcess = scanner.nextInt();
+
+        if (crashedProcess >= 0 && crashedProcess < numProcesses) {
+            bully.activeProcesses[crashedProcess] = false;
+            System.out.println("Process " + crashedProcess + " has crashed.");
+        }
+
+        System.out.print("\nEnter the process that will start the election: ");
+        int initiator = scanner.nextInt();
+
+        if (initiator >= 0 && initiator < numProcesses) {
+            bully.startElection(initiator);
+        } else {
+            System.out.println("Invalid process number.");
+        }
+
+        scanner.close();
+    }
+}
